@@ -192,7 +192,9 @@ export class MockDebugSession extends LoggingDebugSession {
 		response.body = {
 			scopes: scopes
 		};
-		this.sendResponse(response);
+		setTimeout(() => {
+			this.sendResponse(response);
+		}, 2000);
 	}
 
 	protected variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments): void {
