@@ -138,6 +138,14 @@ export class MockRuntime extends EventEmitter {
 		this._breakPoints.delete(path);
 	}
 
+	public gotoLine(line: number) {
+		this._currentLine = line;
+	}
+
+	public gotoTargets() {
+		return this._sourceLines.map((line, idx) => line ? idx : -1).filter(x => x >= 0);
+	}
+
 	// private methods
 
 	private loadSource(file: string) {

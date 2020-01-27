@@ -14,6 +14,23 @@ import { MockRuntime, MockBreakpoint } from './mockRuntime';
 const { Subject } = require('await-notify');
 
 
+interface GotoTarget {
+    /** Unique identifier for a goto target. This is used in the goto request. */
+    id: number;
+    /** The name of the goto target (shown in the UI). */
+    label: string;
+    /** The line of the goto target. */
+    line: number;
+    /** An optional column of the goto target. */
+    column?: number;
+    /** An optional end line of the range covered by the goto target. */
+    endLine?: number;
+    /** An optional end column of the range covered by the goto target. */
+    endColumn?: number;
+    /** Optional memory reference for the instruction pointer value represented by this target. */
+    instructionPointerReference?: string;
+}
+
 /**
  * This interface describes the mock-debug specific launch attributes
  * (which are not part of the Debug Adapter Protocol).
@@ -99,6 +116,8 @@ export class MockDebugSession extends LoggingDebugSession {
 
 		// make VS Code to show a 'step back' button
 		response.body.supportsStepBack = true;
+
+		response.body.supportsGotoTargetsRequest = true;
 
 		this.sendResponse(response);
 
@@ -285,6 +304,32 @@ export class MockDebugSession extends LoggingDebugSession {
 		};
 		this.sendResponse(response);
 	}
+
+    protected async gotoRequest(response: DebugProtocol.GotoResponse, args: DebugProtocol.GotoArguments, request?: DebugProtocol.Request) {
+        response.success = false;
+		this._runtime.gotoLine(args.targetId);
+		response.success = true;
+		this.sendResponse(response);
+		// emulate step
+		this.sendEvent(new StoppedEvent('step', MockDebugSession.THREAD_ID));
+    }
+
+    protected async gotoTargetsRequest(response: DebugProtocol.GotoTargetsResponse, args: DebugProtocol.GotoTargetsArguments, request?: DebugProtocol.Request) {
+        if (args.source.path) {
+            response.body = {
+                targets: this._runtime.gotoTargets().map((line, idx) => {
+                    const gtt: GotoTarget = {
+                        id: idx,
+                        label: `goto ${line}`,
+                        line,
+                    };
+                    return gtt;
+                })
+            }
+            response.success = true;
+            this.sendResponse(response);
+        }
+    }
 
 	//---- helpers
 
